@@ -1,0 +1,9 @@
+/Resources/
+mcp-connector/node_modules/
+mcp-connector/build/
+*.pptx
+*.txt
+pptx_text*
+.env
+.pm2/
+.vscode/
