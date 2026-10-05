@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -54,19 +55,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   throw new Error(`Tool not found: ${name}`);
 });
 
-// 4. Start the Server (Support both STDIO and SSE)
+// 4. Start the Server (Support both STDIO and SSE/Ngrok)
+import ngrok from "@ngrok/ngrok";
+
 async function run() {
   if (!fs.existsSync(WORKSPACE_DIR)) {
     fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
   }
 
-  // If MCP_TRANSPORT is set to 'stdio' or no PM2/PORT is found, default to stdio for Claude Desktop
-  const useStdio = process.env.MCP_TRANSPORT === "stdio" || !process.env.PM2_HOME;
+  // Detect if we are being spawned by Claude Desktop (no PM2)
+  const isClaudeDesktop = !process.env.PM2_HOME && process.env.MCP_TRANSPORT !== "sse";
 
-  if (useStdio) {
+  if (isClaudeDesktop) {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("MCP File Server Connector running on stdio");
+    console.error("MCP File Server Connector running on stdio for Claude Desktop");
   } else {
     const app = express();
     app.use((req, res, next) => {
@@ -88,9 +91,20 @@ async function run() {
       await transport.handlePostMessage(req, res);
     });
 
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`MCP File Server Connector listening on port ${PORT} (SSE Mode)`);
+    const PORT = parseInt(process.env.PORT || "3000", 10);
+    app.listen(PORT, async () => {
+      console.log(`MCP File Server Connector listening locally on port ${PORT}`);
+      try {
+        const listener = await ngrok.connect({
+          addr: PORT,
+          authtoken_from_env: true,
+        });
+        console.log(`Ngrok Tunnel established!`);
+        console.log(`Public URL: ${listener.url()}/sse`);
+        console.log(`Auth Token: ${AUTH_TOKEN}`);
+      } catch (error) {
+        console.error("Failed to start ngrok tunnel:", error);
+      }
     });
   }
 }
