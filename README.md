@@ -11,7 +11,9 @@ A sandboxed **Model Context Protocol (MCP) server** that gives AI agents persist
 ## Architecture
 
 ```
-MCP client (agent / app)  <--JSON-RPC-->  Node.js MCP server  --fs-->  workspace/
+Local client:   MCP client  --JSON-RPC-->  Node.js MCP server  --fs-->  workspace/
+
+Remote client:  MCP client  --HTTPS-->  ngrok tunnel  --HTTP-->  Node.js MCP server  --fs-->  workspace/
 ```
 
 | Property | Value |
@@ -121,7 +123,20 @@ Confirm the build command against `package.json`.
 3. Restart the client and enable the server for your chat.
 4. Verify by calling `list_files` on `.` and `get_project_context`.
 
-For remote access, serve over Streamable HTTP behind an HTTPS tunnel, keep the process alive with a process manager, and **add authentication**.
+## Remote access with ngrok
+
+To reach the server from other devices or hosted clients, expose it through an ngrok tunnel. The server must run over Streamable HTTP for this (the local registration above uses a local process instead).
+
+1. Start the server so it listens on a local port (`<port>`).
+2. Start the tunnel:
+   ```bash
+   ngrok http <port>
+   ```
+   A static domain keeps the URL stable between restarts: `ngrok http --url=<your-domain> <port>`.
+3. Add the public `https://<your-domain>/...` URL to the client as a remote MCP server.
+4. Keep both the server and the tunnel running; a process manager (such as pm2) can restart them automatically.
+
+The public URL is reachable by anyone who finds it, so **require a token or secret** and never log it. Free-tier URLs change on restart unless a static domain is configured.
 
 ## Security
 
@@ -129,7 +144,7 @@ For remote access, serve over Streamable HTTP behind an HTTPS tunnel, keep the p
 |---|---|---|
 | Path traversal (`../..`) | Resolve every path against the workspace root and reject escapes | Not yet tested; add path-escape tests |
 | Destructive tools | Expose only what is needed; rely on client approval prompts for `delete_file` and `move_file` | No server-side gating |
-| Open public endpoint | Require a token or secret if exposed over HTTPS | Not applicable to local registration |
+| Open public endpoint (ngrok URL) | Require a token or secret; never log it | Required for remote use; not applicable to local registration |
 | Prompt injection | Treat file contents as data, never as instructions | Agent-side practice |
 
 Secrets belong in environment variables, never in code or the workspace. The file tools cannot reach the server's own code, so server changes must be applied manually and the process restarted.
