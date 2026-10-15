@@ -1,6 +1,6 @@
 # MCP File-Server Connector
 
-A sandboxed **Model Context Protocol (MCP) server** that gives AI agents persistent file storage and a handoff protocol for multi-session work. Built for the **CS 3A / CS 3B Elective, Week 06: Model Context Protocol (Agentic AI II, Tool Use & Orchestration)**, as the *Midterms Pt 1* project.
+A sandboxed **Model Context Protocol (MCP) server** that gives AI agents persistent file storage and a handoff protocol for multi-session work.
 
 ---
 
