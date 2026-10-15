@@ -32,12 +32,17 @@ const WORKSPACE_DIR = path.resolve(__dirname, "../../workspace");
 const AUTH_TOKEN = process.env.MCP_AUTH_TOKEN || "super-secret-token";
 
 function resolveAndValidatePath(unsafePath: string): string {
+  const normalizedWorkspace = path.resolve(WORKSPACE_DIR) + path.sep;
   const absolutePath = path.resolve(WORKSPACE_DIR, unsafePath);
-  if (!absolutePath.startsWith(WORKSPACE_DIR)) {
+  // Allow the workspace root itself, or anything strictly inside it
+  if (absolutePath !== path.resolve(WORKSPACE_DIR) && !absolutePath.startsWith(normalizedWorkspace)) {
     throw new Error(`Path traversal detected: ${unsafePath} is outside the workspace.`);
   }
   return absolutePath;
 }
+
+// Export for testing
+export { resolveAndValidatePath, WORKSPACE_DIR };
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools: fileTools };

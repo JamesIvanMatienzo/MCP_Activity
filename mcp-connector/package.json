@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "tsc && node build/tests/path_security.test.js",
     "build": "tsc",
     "start": "pm2 start build/index.js --name mcp-server",
     "dev": "nodemon --exec node --loader ts-node/esm src/index.ts"
